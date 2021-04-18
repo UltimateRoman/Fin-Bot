@@ -1,7 +1,12 @@
 import time, requests, json, urllib
+from datetime import date
 
 token = input("Enter telegram bot token:")
 url = "https://api.telegram.org/bot"+token
+
+budget = 0
+exp_amount = 0
+events = []
 
 def get_message(offset):
     if offset:
@@ -22,9 +27,48 @@ def make_msg(respd):
         try:
             text = msg['message']['text']
             chat_id = msg['message']['chat']['id']
-            print(text)
-            if text == "Hi":
-                reply="Hello, I'm FinBot👋"
+            args = text.split()
+
+            if args[0] == "Hi":
+                reply = "Hello, I'm FinBot👋"
+
+            elif args[0] == "/start":
+                reply = "Welcome!☺️ Use /help to get the list of supported commands"
+
+            elif args[0] == "/help":
+                reply = "Hey there! The following commands are supported - \n /budget [amount]- Set your monthly budget \n /spent [amount] [description]- Record a new expenditure event along with amount  \n /history - Shows all your expenditure events \n /view - View your total expenditure and available balance"
+
+            elif args[0] == "/budget":
+                global budget
+                budget = int(args[1])
+                reply = "Your monthly budget has been successfully set as $" + str(budget)
+            
+            elif args[0] == "/spent":
+                global exp_amount
+                global events
+                event = {}
+                event['amount'] = int(args[1])
+                event['desc'] = args[2]
+                events.append(event)
+                exp_amount += event['amount']
+                reply = "Successfully recorded new expenditure."
+
+            elif args[0] == "/history":
+                if events:
+                    reply = "Expenditures for " + date.today().strftime("%B %d, %Y") + "\n"
+                    for e in events:
+                        reply += "$" + str(e['amount']) + " : " + e['desc']
+                else:
+                    reply = "No expenditure events have been recorded yet."
+
+            elif args[0] == "/view":
+                reply = "Total amount spent: $" + str(exp_amount) + "\n Available balance in your budget: $" + str(budget - exp_amount)
+
+            elif args[0] == "Thanks":
+                reply = "Goodbye! See you 😁"
+
+            else:
+                reply = text
             
             send_message(reply, chat_id)
         except Exception as e:
